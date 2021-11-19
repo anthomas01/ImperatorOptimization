@@ -1,0 +1,83 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  plus                                  |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      nut;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -1 0 0 0 0];
+
+internalField   uniform 6.1e-5;
+
+boundaryField
+{
+    "nosecone.*"
+    {
+        type            nutUSpaldingWallFunction;
+        value           $internalField;
+    }
+    "bodyTube.*"
+    {
+        type            nutUSpaldingWallFunction;
+        value           $internalField;
+    }
+    "finCan.*"
+    {
+        type            nutUSpaldingWallFunction;
+        value           $internalField;
+    }
+    "boattailStraight.*"
+    {
+        type            nutUSpaldingWallFunction;
+        value           $internalField;
+    }
+    "nozzle.*"
+    {
+        type            nutUSpaldingWallFunction;
+        value           $internalField;
+    }
+
+    front
+    {
+        type            calculated;
+        value           $internalField;
+    }
+    back
+    {
+        type            calculated;
+        value           $internalField;
+    }
+    top
+    {
+        type            calculated;
+        value           $internalField;
+    }
+    bot
+    {
+        type            calculated;
+        value           $internalField;
+    }
+    left
+    {
+        type            calculated;
+        value           $internalField;
+    }
+    right
+    {
+        type            calculated;
+        value           $internalField;
+    }
+}
+
+
+// ************************************************************************* //

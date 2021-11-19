@@ -1,0 +1,93 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1812                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       polyBoundaryMesh;
+    location    "constant/polyMesh";
+    object      boundary;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+11
+(
+    front
+    {
+        type            patch;
+        nFaces          400;
+        startFace       2289595;
+    }
+    back
+    {
+        type            patch;
+        nFaces          400;
+        startFace       2289995;
+    }
+    bot
+    {
+        type            patch;
+        nFaces          800;
+        startFace       2290395;
+    }
+    top
+    {
+        type            patch;
+        nFaces          800;
+        startFace       2291195;
+    }
+    right
+    {
+        type            patch;
+        nFaces          800;
+        startFace       2291995;
+    }
+    left
+    {
+        type            patch;
+        nFaces          800;
+        startFace       2292795;
+    }
+    boattailStraight
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          2611;
+        startFace       2293595;
+    }
+    bodyTube
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          23564;
+        startFace       2296206;
+    }
+    finCan
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          31665;
+        startFace       2319770;
+    }
+    nosecone
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          4974;
+        startFace       2351435;
+    }
+    nozzle
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          952;
+        startFace       2356409;
+    }
+)
+
+// ************************************************************************* //
