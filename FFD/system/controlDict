@@ -1,0 +1,27 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         10000;
+deltaT          1;
+writeControl    timeStep;
+writeInterval   10000;
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  16;
+writeCompression on;
+timeFormat      general;
+timePrecision   16;
+runTimeModifiable true;
+DebugSwitches
+{
+    SolverPerformance 0;
+}

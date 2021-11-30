@@ -1,0 +1,53 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      surfaceFeatureExtractDict;
+}
+
+boattailStraight.stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+    geometricTestOnly   yes;
+    intersectionMethod  none;
+    writeObj            yes;
+}
+
+bodyTube.stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+    geometricTestOnly   yes;
+    intersectionMethod  none;
+    writeObj            yes;
+}
+
+finCan.stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+    geometricTestOnly   yes;
+    intersectionMethod  none;
+    writeObj            yes;
+}
+
+nosecone.stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+    geometricTestOnly   yes;
+    intersectionMethod  none;
+    writeObj            yes;
+}
+
+nozzle.stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+    geometricTestOnly   yes;
+    intersectionMethod  none;
+    writeObj            yes;
+}
+

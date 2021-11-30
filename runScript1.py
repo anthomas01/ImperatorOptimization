@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-DAFoam run script for the Onera M4 wing at transonic speed
+DAFoam run script for the Imperator Rocket at transonic speed
 """
 
 # =============================================================================
@@ -23,28 +23,37 @@ parser = argparse.ArgumentParser()
 # which optimizer to use. Options are: slsqp (default), snopt, or ipopt
 parser.add_argument("--opt", help="optimizer to use", type=str, default="ipopt")
 # which task to run. Options are: opt (default), run, testSensShape, or solveCL
-parser.add_argument("--task", help="type of run to do", type=str, default="runPrimal")
+parser.add_argument("--task", help="type of run to do", type=str, default="opt")
 args = parser.parse_args()
 gcomm = MPI.COMM_WORLD
 
 # global parameters
 U0 = 300
 p0 = 101325.0
-nuTilda0 = 4.85e-5
+nuTilda0 = 4.47e-5
 T0 = 300.0
 alpha0 = 0.0
 rho0 = 1.225  # density for normalizing CD and CL
-H0 = 3.772 # height
-A0 = 0.0191 #cross sectional area
-#COM = [0.0,0.516,0.425] #center of mass (x from nosecone tip)
+H0 = 4.318 # height
+A0 = 0.0217634 #cross sectional area
+#D0 = 0.1524 #body caliper
+#COM = [x,0.0,0.0] #center of mass (x from nosecone tip)
+
+def calcUAndDir(UMag, alpha1):
+    dragDir = [float(np.cos(alpha1 * np.pi / 180)), float(np.sin(alpha1 * np.pi / 180)), 0.0]
+    liftDir = [float(-np.sin(alpha1 * np.pi / 180)), float(np.cos(alpha1 * np.pi / 180)), 0.0]
+    inletU = [float(UMag * np.cos(alpha1 * np.pi / 180)), float(UMag * np.sin(alpha1 * np.pi / 180)), 0.0]
+    return inletU, dragDir, liftDir
+
+inletU, dragDir, liftDir = calcUAndDir(U0, alpha0)
 
 # Set the parameters for optimization
 daOptions = {
-    "designSurfaces": ["R5-Body-Solid-1","R5-Fin-Solid-1","R5-Fin-Solid-2","R5-Fin-Solid-3","R5-NoseCone-Solid-1"],
+    "designSurfaces": ["nosecone","bodyTube","finCan","boattailStraight","nozzle"],
     "solverName": "DARhoSimpleCFoam",
     "primalMinResTol": 1.0e-6,
     "primalBC": {
-        "U0": {"variable": "U", "patches": ["front","back","bot","top","left","right"], "value": [U0, 0.0, 0.0]},
+        "U0": {"variable": "U", "patches": ["front","back","bot","top","left","right"], "value": inletU},
         "p0": {"variable": "p", "patches": ["front","back","bot","top","left","right"], "value": [p0]},
         "T0": {"variable": "T", "patches": ["front","back","bot","top","left","right"], "value": [T0]},
         "nuTilda0": {"variable": "nuTilda", "patches": ["front","back","bot","top","left","right"], "value": [nuTilda0]},
@@ -66,9 +75,9 @@ daOptions = {
             "part1": {
                 "type": "force",
                 "source": "patchToFace",
-                "patches": ["R5-Body-Solid-1","R5-Fin-Solid-1","R5-Fin-Solid-2","R5-Fin-Solid-3","R5-NoseCone-Solid-1"],
-                "directionMode": "parallelToFlow",
-                "alphaName": "alpha",
+                "patches": ["nosecone","bodyTube","finCan","boattailStraight","nozzle"],
+                "directionMode": "fixedDirection",
+                "direction": dragDir,
                 "scale": 1.0 / (0.5 * rho0 * U0 * U0 * A0),
                 "addToAdjoint": True,
             }
@@ -77,9 +86,9 @@ daOptions = {
             "part1": {
                 "type": "force",
                 "source": "patchToFace",
-                "patches": ["R5-Body-Solid-1","R5-Fin-Solid-1","R5-Fin-Solid-2","R5-Fin-Solid-3","R5-NoseCone-Solid-1"],
-                "directionMode": "normalToFlow",
-                "alphaName": "alpha",
+                "patches": ["nosecone","bodyTube","finCan","boattailStraight","nozzle"],
+                "directionMode": "fixedDirection",
+                "direction": liftDir,
                 "scale": 1.0 / (0.5 * rho0 * U0 * U0 * A0),
                 "addToAdjoint": True,
             }
@@ -107,13 +116,13 @@ daOptions = {
 }
 
 # mesh warping parameters, users need to manually specify the symmetry plane
-# meshOptions = {
-#     "gridFile": os.getcwd(),
-#     "fileType": "openfoam",
-#     "useRotations": False,
-#     # point and normal for the symmetry plane
-#     "symmetryPlanes": [[[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]],
-# }
+meshOptions = {
+    "gridFile": os.getcwd(),
+    "fileType": "openfoam",
+    "useRotations": False,
+    # point and normal for the symmetry plane
+    #"symmetryPlanes": [[[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]],
+}
 
 # options for optimizers
 if args.opt == "snopt":
@@ -132,7 +141,7 @@ elif args.opt == "ipopt":
     optOptions = {
         "tol": 1.0e-7,
         "constr_viol_tol": 1.0e-7,
-        "max_iter": 50,
+        "max_iter": 150,
         "print_level": 8,
         "output_file": "opt_IPOPT.txt",
         "mu_strategy": "adaptive",
@@ -155,39 +164,37 @@ else:
 # =============================================================================
 # Design variable setup
 # =============================================================================
-#DVGeo = DVGeometry("./FFD/R5FFD.xyz")
-
-## nTwists is the number of FFD points in the spanwise direction
-#nTwists = DVGeo.addRefAxis("bodyAxis", xFraction=0.25, alignIndex="k")
-
-## twist function, we keep the root twist constant so the first
-## element in the twist design variable is the twist at the 2nd
-## spanwise location
-#def twist(val, geo):
-#    for i in range(1, nTwists):
-#        geo.rot_z["bodyAxis"].coef[i] = val[i - 1]
-
+DVGeo = DVGeometry("./FFD/rocketFFD.xyz")
 
 # angle of attack
-def alpha(val, geo):
-    aoa = val[0] * np.pi / 180.0
-    inletU = [float(U0 * np.cos(aoa)), float(U0 * np.sin(aoa)), 0]
-    DASolver.setOption("primalBC", {"U0": {"variable": "U", "patches": ["front","back","bot","top","left","right"], "value": inletU}})
-    DASolver.updateDAOption()
-
+#def alpha(val, geo):
+#    aoa = val[0] * np.pi / 180.0
+#    inletU = [float(U0 * np.cos(aoa)), float(U0 * np.sin(aoa)), 0]
+#    DASolver.setOption("primalBC", {"U0": {"variable": "U", "patches": ["front","back","bot","top","left","right"], "value": inletU}})
+#    DASolver.updateDAOption()
 
 # select points
-#pts = DVGeo.getLocalIndex(0)
-#indexList = pts[:, :, :].flatten()
-#PS = geo_utils.PointSelect("list", indexList)
+boattailVol = 3
+pts = DVGeo.getLocalIndex(boattailVol)
+indexList = pts[1:, :, :].flatten()
+bPS = geo_utils.PointSelect("list", indexList)
+#bP1 = geo_utils.PointSelect("list", pts[1:,0,0].flatten())
+#bP2 = geo_utils.PointSelect("list", pts[1:,0,1].flatten())
+#bP3 = geo_utils.PointSelect("list", pts[1:,1,0].flatten())
+#bP4 = geo_utils.PointSelect("list", pts[1:,1,1].flatten())
 # shape
-#DVGeo.addGeoDVLocal("shapey", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=PS)
-#daOptions["designVar"]["shapey"] = {"designVarType": "FFD"}
-# twist
-#DVGeo.addGeoDVGlobal("twist", np.zeros(nTwists - 1), twist, lower=-10.0, upper=10.0, scale=1.0)
-#daOptions["designVar"]["twist"] = {"designVarType": "FFD"}
+DVGeo.addGeoDVLocal("boattail_shapey", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS)
+#DVGeo.addLocalSectionDV('boattail_trans1', secIndex='j', lower=-1, upper=1, axis=2, pointSelect=bP1)
+#DVGeo.addLocalSectionDV('boattail_trans2', secIndex='k', lower=-1, upper=1, axis=2, pointSelect=bP2)
+#DVGeo.addLocalSectionDV('boattail_trans3', secIndex='j', lower=-1, upper=1, axis=2, pointSelect=bP3)
+#DVGeo.addLocalSectionDV('boattail_trans4', secIndex='k', lower=-1, upper=1, axis=2, pointSelect=bP4)
+daOptions["designVar"]["boattail_shapey"] = {"designVarType": "FFD"}
+#daOptions["designVar"]["boattail_trans1"] = {"designVarType": "FFD"}
+#daOptions["designVar"]["boattail_trans2"] = {"designVarType": "FFD"}
+#daOptions["designVar"]["boattail_trans3"] = {"designVarType": "FFD"}
+#daOptions["designVar"]["boattail_trans4"] = {"designVarType": "FFD"}
 # alpha
-#DVGeo.addGeoDVGlobal("alpha", [alpha0], alpha, lower=0.0, upper=10.0, scale=1.0)
+#DVGeo.addGeoDVGlobal("alpha", [alpha0], alpha, lower=0.0, upper=0.0, scale=1.0)
 #daOptions["designVar"]["alpha"] = {"designVarType": "AOA", "patches": ["front","back","bot","top","left","right"], "flowAxis": "x", "normalAxis": "y"}
 
 # =============================================================================
@@ -209,21 +216,23 @@ DVCon = DVConstraints()
 #DVCon.setDVGeo(DVGeo)
 DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOption("designSurfaceFamily")))
 
-# NOTE: the LE and TE lists are not parallel lines anymore, these two lists define lines that
-# are close to the leading and trailing edges while being completely within the wing surface
-leList = [[0.03, 0.5164, 0.425], [0.8, 0.59, 0.425]]
-teList = [[3.765, 0.445, 0.425], [3.765, 0.59, 0.425]]
-#letelists for fins??
-
+#Boattail Constraints
+leList = [[4.12, -0.075, 0], [4.2, 0.075, 0]]
+teList = [[4.25, -0.075, 0], [4.25, -0.075, 0]]
 # volume constraint
-DVCon.addVolumeConstraint(leList, teList, nSpan=10, nChord=10, lower=1.0, upper=3, scaled=True)
-
+DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 # thickness constraint
-DVCon.addThicknessConstraints2D(leList, teList, nSpan=10, nChord=10, lower=0.8, upper=3.0, scaled=True)
+DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
+#circularity constraints
+DVCon.addCircularityConstraint([4.1656,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=1.0, upper=1.0, scaled=True)
+DVCon.addCircularityConstraint([4.191,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scaled=True)
+DVCon.addCircularityConstraint([4.2164,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scaled=True)
+DVCon.addCircularityConstraint([4.2418,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scaled=True)
+DVCon.addCircularityConstraint([4.2672,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scaled=True)
 
 # Le/Te constraints
-DVCon.addLeTeConstraints(0, "iLow")
-DVCon.addLeTeConstraints(0, "iHigh")
+#DVCon.addLeTeConstraints(0, "iLow")
+#DVCon.addLeTeConstraints(0, "iHigh")
 
 # =============================================================================
 # Initialize optFuncs for optimization
@@ -240,7 +249,7 @@ optFuncs.gcomm = gcomm
 if args.task == "opt":
 
     #alpha4CLTarget = optFuncs.solveCL(CL_target, "alpha", "CL")
-    alpha([alpha0], None)
+    #alpha([alpha0], None)
 
     optProb = Optimization("opt", objFun=optFuncs.calcObjFuncValues, comm=gcomm)
     DVGeo.addVariablesPyOpt(optProb)

@@ -21,9 +21,9 @@ nuTilda0 = 4.47e-5
 T0 = 300.0
 alpha0 = 0.0
 rho0 = 1.225  # density for normalizing CD and CL
-#H0 = 3.772 # height
+#H0 = 4.318 # height
 A0 = 0.0217634 #cross sectional area
-#COM = [0.0,0.516,0.425] #center of mass (x from nosecone tip)
+#COM = [x,0.0,0.0] #center of mass (x from nosecone tip)
 
 def calcUAndDir(UMag, alpha1):
     dragDir = [float(np.cos(alpha1 * np.pi / 180)), float(np.sin(alpha1 * np.pi / 180)), 0.0]
