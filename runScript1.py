@@ -216,7 +216,7 @@ DVCon.setDVGeo(DVGeo)
 DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOption("designSurfaceFamily")))
 
 #Boattail Constraints
-leList = [[4.12, -0.075, 0], [4.2, 0.075, 0]]
+leList = [[4.2, -0.075, 0], [4.2, 0.075, 0]]
 teList = [[4.25, -0.075, 0], [4.25, 0.075, 0]]
 # volume constraint
 DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
