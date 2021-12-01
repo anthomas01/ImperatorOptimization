@@ -119,9 +119,8 @@ daOptions = {
 meshOptions = {
     "gridFile": os.getcwd(),
     "fileType": "openfoam",
-    "useRotations": False,
     # point and normal for the symmetry plane
-    #"symmetryPlanes": [[[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]],
+    "symmetryPlanes": [],
 }
 
 # options for optimizers
@@ -213,7 +212,7 @@ DASolver.setEvalFuncs(evalFuncs)
 # Constraint setup
 # =============================================================================
 DVCon = DVConstraints()
-#DVCon.setDVGeo(DVGeo)
+DVCon.setDVGeo(DVGeo)
 DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOption("designSurfaceFamily")))
 
 #Boattail Constraints
