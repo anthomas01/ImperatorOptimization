@@ -21,8 +21,8 @@ FoamFile
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          60;
-        startFace       9;
+        nFaces          62;
+        startFace       8;
     }
 )
 
