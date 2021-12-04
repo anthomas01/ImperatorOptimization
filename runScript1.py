@@ -223,11 +223,11 @@ DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.
 # thickness constraint
 DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 #circularity constraints
-DVCon.addCircularityConstraint([4.1656,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=1.0, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.191,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2164,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2418,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2672,0,0], [1,0,0], 0.0762, [0,1,0], 0, 360, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.1656,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=1.0, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
 
 # Le/Te constraints
 #DVCon.addLeTeConstraints(0, "iLow")
