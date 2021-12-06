@@ -21,7 +21,7 @@ import numpy as np
 # =============================================================================
 parser = argparse.ArgumentParser()
 # which optimizer to use. Options are: slsqp (default), snopt, or ipopt
-parser.add_argument("--opt", help="optimizer to use", type=str, default="ipopt")
+parser.add_argument("--opt", help="optimizer to use", type=str, default="snopt")
 # which task to run. Options are: opt (default), run, testSensShape, or solveCL
 parser.add_argument("--task", help="type of run to do", type=str, default="opt")
 args = parser.parse_args()
@@ -106,7 +106,7 @@ daOptions = {
         #     }
         # },
     },
-    "adjEqnOption": {"gmresRelTol": 1.0e-6, "pcFillLevel": 1, "jacMatReOrdering": "rcm"},
+    "adjEqnOption": {"gmresRelTol": 1.0e-6, "pcFillLevel": 1, "jacMatReOrdering": "rcm", "gmresMaxIters": 1500, "gmresRestart": 1500},
     # transonic preconditioner to speed up the adjoint convergence
     "transonicPCOption": 1,
     "normalizeStates": {"U": U0, "p": p0, "nuTilda": nuTilda0 * 10.0, "phi": 1.0, "T": T0},
@@ -131,7 +131,7 @@ if args.opt == "snopt":
         "Minor feasibility tolerance": 1.0e-7,
         "Verify level": -1,
         "Function precision": 1.0e-7,
-        "Major iterations limit": 50,
+        "Major iterations limit": 150,
         "Nonderivative linesearch": None,
         "Print file": "opt_SNOPT_print.txt",
         "Summary file": "opt_SNOPT_summary.txt",
