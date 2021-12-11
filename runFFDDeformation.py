@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
-DAFoam run script for the Imperator Rocket at transonic speed
+DAFoam run script for deforming ffd points - imperator rocket
 """
+#mpirun -np 1 python runFFDDeformation.py 2>&1 | tee -a logFFDDeformation.txt
 
 # =============================================================================
 # Imports
@@ -12,18 +13,17 @@ from mpi4py import MPI
 from dafoam import PYDAFOAM, optFuncs
 from pygeo import *
 from pyspline import *
-from idwarp import *
+from idwarp import USMesh
 from pyoptsparse import Optimization, OPT
 import numpy as np
+
 
 # =============================================================================
 # Input Parameters
 # =============================================================================
 parser = argparse.ArgumentParser()
-# which optimizer to use. Options are: slsqp (default), snopt, or ipopt
-parser.add_argument("--opt", help="optimizer to use", type=str, default="snopt")
-# which task to run. Options are: opt (default), run, testSensShape, or solveCL
-parser.add_argument("--task", help="type of run to do", type=str, default="opt")
+parser.add_argument("--opt", help="optimizer to use", type=str, default="ipopt")
+parser.add_argument("--task", help="type of run to do", type=str, default="testFFD")
 args = parser.parse_args()
 gcomm = MPI.COMM_WORLD
 
@@ -49,7 +49,7 @@ inletU, dragDir, liftDir = calcUAndDir(U0, alpha0)
 
 # Set the parameters for optimization
 daOptions = {
-    "designSurfaces": ["nosecone","bodyTube","finCan","boattailStraight","nozzle"],
+    "designSurfaces": ["boattailStraight"],
     "solverName": "DARhoSimpleCFoam",
     "primalMinResTol": 1.0e-6,
     "primalBC": {
@@ -113,6 +113,7 @@ daOptions = {
     "adjPartDerivFDStep": {"State": 1e-6, "FFD": 1e-3},
     "adjPCLag": 1,
     "designVar": {},
+    "writeDeformedFFDs": True
 }
 
 # mesh warping parameters, users need to manually specify the symmetry plane
@@ -173,28 +174,20 @@ DVGeo = DVGeometry("./FFD/boattailFFD.xyz")
 #    DASolver.updateDAOption()
 
 # select points
-boattailVol = 3
-pts = DVGeo.getLocalIndex(boattailVol)
-indexList = pts[1:, :, :].flatten()
-bPS = geo_utils.PointSelect("list", indexList)
-#bP1 = geo_utils.PointSelect("list", pts[1:,0,0].flatten())
-#bP2 = geo_utils.PointSelect("list", pts[1:,0,1].flatten())
-#bP3 = geo_utils.PointSelect("list", pts[1:,1,0].flatten())
-#bP4 = geo_utils.PointSelect("list", pts[1:,1,1].flatten())
-# shape
-DVGeo.addGeoDVLocal("boattail_shapey", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS)
-#DVGeo.addLocalSectionDV('boattail_trans1', secIndex='j', lower=-1, upper=1, axis=2, pointSelect=bP1)
-#DVGeo.addLocalSectionDV('boattail_trans2', secIndex='k', lower=-1, upper=1, axis=2, pointSelect=bP2)
-#DVGeo.addLocalSectionDV('boattail_trans3', secIndex='j', lower=-1, upper=1, axis=2, pointSelect=bP3)
-#DVGeo.addLocalSectionDV('boattail_trans4', secIndex='k', lower=-1, upper=1, axis=2, pointSelect=bP4)
-daOptions["designVar"]["boattail_shapey"] = {"designVarType": "FFD"}
-#daOptions["designVar"]["boattail_trans1"] = {"designVarType": "FFD"}
-#daOptions["designVar"]["boattail_trans2"] = {"designVarType": "FFD"}
-#daOptions["designVar"]["boattail_trans3"] = {"designVarType": "FFD"}
-#daOptions["designVar"]["boattail_trans4"] = {"designVarType": "FFD"}
-# alpha
-#DVGeo.addGeoDVGlobal("alpha", [alpha0], alpha, lower=0.0, upper=0.0, scale=1.0)
-#daOptions["designVar"]["alpha"] = {"designVarType": "AOA", "patches": ["front","back","bot","top","left","right"], "flowAxis": "x", "normalAxis": "y"}
+bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[1:-1, :, :].flatten())
+bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[1:-1, :, :].flatten())
+bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[1:-1, :, :].flatten())
+bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[1:-1, :, :].flatten())
+
+DVGeo.addGeoDVSectionLocal("boattail_shape_r1", secIndex='k', lower=-1.0, upper=1.0, scale=1.0, axis=2, pointSelect=bPS1, orient0='k', orient2="ffd")
+DVGeo.addGeoDVSectionLocal("boattail_shape_r2", secIndex='k', lower=-1.0, upper=1.0, scale=1.0, axis=2, pointSelect=bPS2, orient0='k', orient2="ffd")
+DVGeo.addGeoDVSectionLocal("boattail_shape_r3", secIndex='j', lower=-1.0, upper=1.0, scale=1.0, axis=1, pointSelect=bPS3, orient0='i', orient2="ffd") #correct?
+DVGeo.addGeoDVSectionLocal("boattail_shape_r4", secIndex='j', lower=-1.0, upper=1.0, scale=1.0, axis=1, pointSelect=bPS4, orient0='i', orient2="ffd") #correct?
+
+daOptions["designVar"]["boattail_shape_r1"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_r2"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_r3"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_r4"] = {"designVarType": "FFD"}
 
 # =============================================================================
 # DAFoam initialization
@@ -216,18 +209,18 @@ DVCon.setDVGeo(DVGeo)
 DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOption("designSurfaceFamily")))
 
 #Boattail Constraints
-leList = [[4.175, -0.075, 0], [4.175, 0.075, 0]]
-teList = [[4.265, -0.075, 0], [4.265, 0.075, 0]]
+#leList = [[4.175, -0.075, 0], [4.175, 0.075, 0]]
+#teList = [[4.265, -0.075, 0], [4.265, 0.075, 0]]
 # volume constraint
-DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
+#DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 # thickness constraint
-DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
+#DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 #circularity constraints
-DVCon.addCircularityConstraint([4.1656,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=1.0, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+#DVCon.addCircularityConstraint([4.1656,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=1.0, upper=1.0, scale=1.0)
+#DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+#DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+#DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+#DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
 
 # Le/Te constraints
 #DVCon.addLeTeConstraints(0, "iLow")
@@ -287,6 +280,21 @@ elif args.task == "testAPI":
     DASolver.setOption("primalMinResTol", 1e-2)
     DASolver.updateDAOption()
     optFuncs.runPrimal()
+
+elif args.task == "testFFD":
+
+    xDVs = DVGeo.getValues()
+    # perturb the first FFD point by 0.1
+    xDVs["boattail_shape_r1"][:] = -0.1
+    xDVs["boattail_shape_r2"][:] = 0.1
+    xDVs["boattail_shape_r3"][:] = 0.1
+    xDVs["boattail_shape_r4"][:] = -0.1
+
+    DVGeo.setDesignVars(xDVs)
+    # just run the flow for one step
+    DASolver()
+    # write the deform FFDs, we have set writeDeformedFFDs=True in daOption
+    DASolver.writeDeformedFFDs()
 
 else:
     print("task arg not found!")
