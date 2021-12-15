@@ -174,20 +174,28 @@ DVGeo = DVGeometry("./FFD/boattailFFD.xyz")
 #    DASolver.updateDAOption()
 
 # select points
-bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[1:-1, :, :].flatten())
-bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[1:-1, :, :].flatten())
-bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[1:-1, :, :].flatten())
-bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[1:-1, :, :].flatten())
+bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, 1:, 0].flatten())
+bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, 1:, 1].flatten())
+bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[1:, :, 0].flatten())
+bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[1:, :, 1].flatten())
 
-DVGeo.addGeoDVSectionLocal("boattail_shape_r1", secIndex='k', lower=-1.0, upper=1.0, scale=1.0, axis=2, pointSelect=bPS1, orient0='k', orient2="ffd")
-DVGeo.addGeoDVSectionLocal("boattail_shape_r2", secIndex='k', lower=-1.0, upper=1.0, scale=1.0, axis=2, pointSelect=bPS2, orient0='k', orient2="ffd")
-DVGeo.addGeoDVSectionLocal("boattail_shape_r3", secIndex='j', lower=-1.0, upper=1.0, scale=1.0, axis=1, pointSelect=bPS3, orient0='i', orient2="ffd") #correct?
-DVGeo.addGeoDVSectionLocal("boattail_shape_r4", secIndex='j', lower=-1.0, upper=1.0, scale=1.0, axis=1, pointSelect=bPS4, orient0='i', orient2="ffd") #correct?
+DVGeo.addGeoDVLocal("boattail_shape_y1", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS1)
+DVGeo.addGeoDVLocal("boattail_shape_y2", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS2)
+DVGeo.addGeoDVLocal("boattail_shape_y3", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS3)
+DVGeo.addGeoDVLocal("boattail_shape_y4", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS4)
+DVGeo.addGeoDVLocal("boattail_shape_z1", lower=-1.0, upper=1.0, axis="z", scale=1.0, pointSelect=bPS1)
+DVGeo.addGeoDVLocal("boattail_shape_z2", lower=-1.0, upper=1.0, axis="z", scale=1.0, pointSelect=bPS2)
+DVGeo.addGeoDVLocal("boattail_shape_z3", lower=-1.0, upper=1.0, axis="z", scale=1.0, pointSelect=bPS3)
+DVGeo.addGeoDVLocal("boattail_shape_z4", lower=-1.0, upper=1.0, axis="z", scale=1.0, pointSelect=bPS4)
 
-daOptions["designVar"]["boattail_shape_r1"] = {"designVarType": "FFD"}
-daOptions["designVar"]["boattail_shape_r2"] = {"designVarType": "FFD"}
-daOptions["designVar"]["boattail_shape_r3"] = {"designVarType": "FFD"}
-daOptions["designVar"]["boattail_shape_r4"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_y1"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_y2"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_y3"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_y4"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_z1"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_z2"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_z3"] = {"designVarType": "FFD"}
+daOptions["designVar"]["boattail_shape_z4"] = {"designVarType": "FFD"}
 
 # =============================================================================
 # DAFoam initialization
@@ -284,11 +292,11 @@ elif args.task == "testAPI":
 elif args.task == "testFFD":
 
     xDVs = DVGeo.getValues()
-    # perturb the first FFD point by 0.1
-    xDVs["boattail_shape_r1"][:] = -0.1
-    xDVs["boattail_shape_r2"][:] = 0.1
-    xDVs["boattail_shape_r3"][:] = 0.1
-    xDVs["boattail_shape_r4"][:] = -0.1
+    # perturb the outer ffd points by 0.1
+    xDVs["boattail_shape_y1"][:] = -0.1
+    xDVs["boattail_shape_y2"][:] = 0.1
+    xDVs["boattail_shape_z3"][:] = -0.1
+    xDVs["boattail_shape_z4"][:] = 0.1
 
     DVGeo.setDesignVars(xDVs)
     # just run the flow for one step
