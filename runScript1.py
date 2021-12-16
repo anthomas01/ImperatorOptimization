@@ -49,7 +49,7 @@ inletU, dragDir, liftDir = calcUAndDir(U0, alpha0)
 
 # Set the parameters for optimization
 daOptions = {
-    "designSurfaces": ["nosecone","bodyTube","finCan","boattailStraight","nozzle"],
+    "designSurfaces": ["boattailStraight"],
     "solverName": "DARhoSimpleCFoam",
     "primalMinResTol": 1.0e-6,
     "primalBC": {
