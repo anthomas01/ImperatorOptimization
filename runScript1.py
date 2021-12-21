@@ -49,7 +49,7 @@ inletU, dragDir, liftDir = calcUAndDir(U0, alpha0)
 
 # Set the parameters for optimization
 daOptions = {
-    "designSurfaces": ["boattailStraight"],
+    "designSurfaces": ["nosecone","bodyTube","finCan","boattailStraight","nozzle"],
     "solverName": "DARhoSimpleCFoam",
     "primalMinResTol": 1.0e-6,
     "primalBC": {
@@ -172,11 +172,11 @@ DVGeo = DVGeometry("./FFD/boattailFFD.xyz")
 #    DASolver.setOption("primalBC", {"U0": {"variable": "U", "patches": ["front","back","bot","top","left","right"], "value": inletU}})
 #    DASolver.updateDAOption()
 
-# select points
-bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, 1:, 0].flatten())
-bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, 1:, 1].flatten())
-bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[1:, :, 0].flatten())
-bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[1:, :, 1].flatten())
+# select points for boattail
+bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, :, 0].flatten())
+bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, :, 1].flatten())
+bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[:, :, 0].flatten())
+bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[:, :, 1].flatten())
 
 DVGeo.addGeoDVLocal("boattail_shape_y1", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS1)
 DVGeo.addGeoDVLocal("boattail_shape_y2", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS2)
@@ -219,15 +219,15 @@ DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOptio
 leList = [[4.175, -0.075, 0], [4.175, 0.075, 0]]
 teList = [[4.265, -0.075, 0], [4.265, 0.075, 0]]
 # volume constraint
-DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
+#DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 # thickness constraint
-DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
+#DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 #circularity constraints
 DVCon.addCircularityConstraint([4.1656,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=1.0, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.5, scale=1.0)
+DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.5, scale=1.0)
+DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.5, scale=1.0)
+DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.5, scale=1.0)
 
 # Le/Te constraints
 #DVCon.addLeTeConstraints(0, "iLow")
