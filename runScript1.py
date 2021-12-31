@@ -113,6 +113,7 @@ daOptions = {
     "adjPartDerivFDStep": {"State": 1e-6, "FFD": 1e-3},
     "adjPCLag": 1,
     "designVar": {},
+    "writeDeformedFFDs": True
 }
 
 # mesh warping parameters, users need to manually specify the symmetry plane
@@ -173,10 +174,10 @@ DVGeo = DVGeometry("./FFD/boattailFFD.xyz")
 #    DASolver.updateDAOption()
 
 # select points for boattail
-bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, :, 0].flatten())
-bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, :, 1].flatten())
-bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[:, :, 0].flatten())
-bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[:, :, 1].flatten())
+bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, 2:, 0].flatten())
+bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, 2:, 1].flatten())
+bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[2:, :, 0].flatten())
+bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[2:, :, 1].flatten())
 
 DVGeo.addGeoDVLocal("boattail_shape_y1", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS1)
 DVGeo.addGeoDVLocal("boattail_shape_y2", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS2)
@@ -216,18 +217,15 @@ DVCon.setDVGeo(DVGeo)
 DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOption("designSurfaceFamily")))
 
 #Boattail Constraints
-leList = [[4.175, -0.075, 0], [4.175, 0.075, 0]]
-teList = [[4.265, -0.075, 0], [4.265, 0.075, 0]]
+#leList = [[4.175, -0.075, 0], [4.175, 0.075, 0]]
+#teList = [[4.265, -0.075, 0], [4.265, 0.075, 0]]
 # volume constraint
 #DVCon.addVolumeConstraint(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 # thickness constraint
 #DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 #circularity constraints
-DVCon.addCircularityConstraint([4.1656,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=1.0, upper=1.0, scale=1.0)
-DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.5, scale=1.0)
-DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.5, scale=1.0)
-DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.5, scale=1.0)
-DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.5, scale=1.0)
+DVCon.addCircularityConstraint([4.234179,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.269740,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.0, scale=1.0)
 
 # Le/Te constraints
 #DVCon.addLeTeConstraints(0, "iLow")
@@ -269,6 +267,8 @@ if args.task == "opt":
     sol = opt(optProb, sens=optFuncs.calcObjFuncSens, storeHistory=histFile)
     if gcomm.rank == 0:
         print(sol)
+
+    DASolver.writeDeformedFFDs()
 
 if args.task == "runPrimal":
 
