@@ -1,29 +1,32 @@
 #!/usr/bin/env python
 """
-DAFoam run script for deforming ffd points - imperator rocket
+DAFoam run script for the Imperator Rocket using SMT
 """
-#mpirun -np 1 python runFFDDeformation.py 2>&1 | tee -a logFFDDeformation.txt
 
 # =============================================================================
 # Imports
 # =============================================================================
+from cmath import pi
 import os
 import argparse
 from mpi4py import MPI
 from dafoam import PYDAFOAM, optFuncs
 from pygeo import *
 from pyspline import *
-from idwarp import USMesh
+from idwarp import *
 from pyoptsparse import Optimization, OPT
 import numpy as np
-
+from smt.applications.ego import EGO 
+from smt.sampling_methods import LHS #Sampling
 
 # =============================================================================
 # Input Parameters
 # =============================================================================
 parser = argparse.ArgumentParser()
-parser.add_argument("--opt", help="optimizer to use", type=str, default="ipopt")
-parser.add_argument("--task", help="type of run to do", type=str, default="testFFD")
+# which optimizer to use. Options are: slsqp (default), snopt, or ipopt
+parser.add_argument("--opt", help="optimizer to use", type=str, default="snopt")
+# which task to run. Options are: opt (default), run, testSensShape, or solveCL
+parser.add_argument("--task", help="type of run to do", type=str, default="smt")
 args = parser.parse_args()
 gcomm = MPI.COMM_WORLD
 
@@ -106,7 +109,7 @@ daOptions = {
         #     }
         # },
     },
-    "adjEqnOption": {"gmresRelTol": 1.0e-6, "pcFillLevel": 1, "jacMatReOrdering": "rcm", "gmresMaxIters": 1500, "gmresRestart": 1500},
+    "adjEqnOption": {"gmresRelTol": 1.0e-6, "pcFillLevel": 1, "jacMatReOrdering": "rcm", "gmresMaxIters": 2000, "gmresRestart": 2000},
     # transonic preconditioner to speed up the adjoint convergence
     "transonicPCOption": 1,
     "normalizeStates": {"U": U0, "p": p0, "nuTilda": nuTilda0 * 10.0, "phi": 1.0, "T": T0},
@@ -119,7 +122,7 @@ daOptions = {
 # mesh warping parameters, users need to manually specify the symmetry plane
 meshOptions = {
     "gridFile": os.getcwd(),
-    "fileType": "openfoam",
+    "fileType": "OpenFOAM",
     # point and normal for the symmetry plane
     "symmetryPlanes": [],
 }
@@ -173,11 +176,11 @@ DVGeo = DVGeometry("./FFD/boattailFFD.xyz")
 #    DASolver.setOption("primalBC", {"U0": {"variable": "U", "patches": ["front","back","bot","top","left","right"], "value": inletU}})
 #    DASolver.updateDAOption()
 
-# select points
-bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, 1:, 0].flatten())
-bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, 1:, 1].flatten())
-bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[1:, :, 0].flatten())
-bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[1:, :, 1].flatten())
+# select points for boattail
+bPS1 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(1)[:, 2:, 0].flatten())
+bPS2 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(2)[:, 2:, 1].flatten())
+bPS3 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(3)[2:, :, 0].flatten())
+bPS4 = geo_utils.PointSelect("list", DVGeo.getLocalIndex(4)[2:, :, 1].flatten())
 
 DVGeo.addGeoDVLocal("boattail_shape_y1", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS1)
 DVGeo.addGeoDVLocal("boattail_shape_y2", lower=-1.0, upper=1.0, axis="y", scale=1.0, pointSelect=bPS2)
@@ -224,11 +227,8 @@ DVCon.setSurface(DASolver.getTriangulatedMeshSurface(groupName=DASolver.getOptio
 # thickness constraint
 #DVCon.addThicknessConstraints2D(leList, teList, nSpan=2, nChord=8, lower=0.5, upper=1.0, scaled=True)
 #circularity constraints
-#DVCon.addCircularityConstraint([4.1656,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=1.0, upper=1.0, scale=1.0)
-#DVCon.addCircularityConstraint([4.191,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-#DVCon.addCircularityConstraint([4.2164,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-#DVCon.addCircularityConstraint([4.2418,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
-#DVCon.addCircularityConstraint([4.2672,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=20, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.234179,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.0, scale=1.0)
+DVCon.addCircularityConstraint([4.269740,0.0,0.0], [1.0,0.0,0.0], 0.0762, [0.0,1.0,0.0], 0.0, 360.0, nPts=9, lower=0.5, upper=1.0, scale=1.0)
 
 # Le/Te constraints
 #DVCon.addLeTeConstraints(0, "iLow")
@@ -242,6 +242,80 @@ optFuncs.DVGeo = DVGeo
 optFuncs.DVCon = DVCon
 optFuncs.evalFuncs = evalFuncs
 optFuncs.gcomm = gcomm
+
+# =============================================================================
+# Surrogate Modeling Function
+# =============================================================================
+def smt(x):
+    #Print Input
+    print("input=",x)
+    inputLength = len(x[:,0])
+    outputArr = np.ones([inputLength,1])
+    numInput = 0
+    for input in x:
+        #Set new design variables
+        xDVs = DVGeo.getValues()
+        quadrantPoints = 9
+        dTheta = np.pi/(quadrantPoints*2)
+        r1=input[0]
+        r2=input[1]
+        theta = np.zeros([1,quadrantPoints])
+        for i in range(len(theta)):
+            theta[i] = dTheta*(i-0.5*(quadrantPoints-1))
+        
+        #r1
+        xDVs["boattail_shape_y1"][::2] = -r1*np.cos(theta)
+        xDVs["boattail_shape_y2"][::2] = r1*np.cos(theta)
+        xDVs["boattail_shape_y3"][:quadrantPoints] = r1*np.sin(theta)
+        xDVs["boattail_shape_y4"][:quadrantPoints] = r1*np.sin(theta)
+        xDVs["boattail_shape_z1"][::2] = r1*np.sin(theta)
+        xDVs["boattail_shape_z2"][::2] = r1*np.sin(theta)
+        xDVs["boattail_shape_z3"][:quadrantPoints] = -r1*np.cos(theta)
+        xDVs["boattail_shape_z4"][:quadrantPoints] = r1*np.cos(theta)
+
+        #r2
+        xDVs["boattail_shape_y1"][1::2] = -r2*np.cos(theta)
+        xDVs["boattail_shape_y2"][1::2] = r2*np.cos(theta)
+        xDVs["boattail_shape_y3"][quadrantPoints:] = r2*np.sin(theta)
+        xDVs["boattail_shape_y4"][quadrantPoints:] = r2*np.sin(theta)
+        xDVs["boattail_shape_z1"][1::2] = r2*np.sin(theta)
+        xDVs["boattail_shape_z2"][1::2] = r2*np.sin(theta)
+        xDVs["boattail_shape_z3"][quadrantPoints:] = -r2*np.cos(theta)
+        xDVs["boattail_shape_z4"][quadrantPoints:] = r2*np.cos(theta)
+
+        #Block Intersections
+        corner1 = [0,1,16,17]
+        for i in corner1:
+            xDVs["boattail_shape_y1"][i]*=0.5
+            xDVs["boattail_shape_y2"][i]*=0.5
+            xDVs["boattail_shape_z1"][i]*=0.5
+            xDVs["boattail_shape_z2"][i]*=0.5
+
+        corner2 = [0,8,9,17]
+        for i in corner2:
+            xDVs["boattail_shape_y3"][i]*=0.5
+            xDVs["boattail_shape_y4"][i]*=0.5
+            xDVs["boattail_shape_z3"][i]*=0.5
+            xDVs["boattail_shape_z4"][i]*=0.5
+
+        #Deform Mesh
+        DVGeo.setDesignVars(xDVs)
+
+        #Run CFD and get output
+        DASolver()
+        output={}
+        DASolver.evalFunctions(output, evalFuncs=evalFuncs)
+
+        # write the deform FFDs
+        #DASolver.writeDeformedFFDs()
+
+        #Print Output
+        print("output=",output)
+        outputArr[numInput,0] = output["CD"]
+        numInput+=1
+
+    return outputArr
+
 
 # =============================================================================
 # Task
@@ -271,6 +345,32 @@ if args.task == "opt":
     if gcomm.rank == 0:
         print(sol)
 
+    DASolver.writeDeformedFFDs()
+
+if args.task == "smt":
+    #Limits for shape variables
+    xlimits=np.array([[-1.0,0.0] for i in range(2)])
+    
+    criterion='SBO' #'EI' or 'SBO' or 'LCB'
+
+    #number of points in the initial DOE
+    ndoe = 50 #(at least number of design variables + 1)
+
+    #number of iterations with EGO 
+    n_iter = 1
+
+    #Build the initial DOE, add the random_state option to have the reproducibility of the LHS points
+    sampling = LHS(xlimits=xlimits, random_state=1)
+    xdoe = sampling(ndoe)
+
+    #EGO call
+    ego = EGO(n_iter=n_iter, criterion=criterion, xdoe=xdoe, xlimits=xlimits)
+    #x_data, y_data = ego._mySetup_optimizer(fun=smt)
+
+    #x_opt, y_opt, ind_best, x_data, y_data = ego.myOptimize(fun=smt, x_data=x_data, y_data=y_data)
+    x_opt, y_opt, ind_best, x_data, y_data = ego.optimize(fun=smt)
+    print('Optimized design variables and the minimized objective: ', x_opt, y_opt, ' obtained using EGO criterion = ', criterion)
+
 if args.task == "runPrimal":
 
     optFuncs.runPrimal()
@@ -288,37 +388,6 @@ elif args.task == "testAPI":
     DASolver.setOption("primalMinResTol", 1e-2)
     DASolver.updateDAOption()
     optFuncs.runPrimal()
-
-elif args.task == "testFFD":
-
-    xDVs = DVGeo.getValues()
-    quadrantPoints = 9
-    dTheta = np.pi/(quadrantPoints*2)
-    r1=-0.05
-    r2=-0.10
-    for i in range(quadrantPoints):
-        xDVs["boattail_shape_y1"][:quadrantPoints] = -r1*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y2"][:quadrantPoints] = r1*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y3"][:quadrantPoints] = -r1*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y4"][:quadrantPoints] = r1*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z1"][:quadrantPoints] = -r1*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z2"][:quadrantPoints] = r1*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z3"][:quadrantPoints] = -r1*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z4"][:quadrantPoints] = r1*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y1"][quadrantPoints:] = -r2*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y2"][quadrantPoints:] = r2*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y3"][quadrantPoints:] = -r2*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_y4"][quadrantPoints:] = r2*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z1"][quadrantPoints:] = -r2*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z2"][quadrantPoints:] = r2*np.sin(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z3"][quadrantPoints:] = -r2*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-        xDVs["boattail_shape_z4"][quadrantPoints:] = r2*np.cos(dTheta*(i-0.5(quadrantPoints-1)))
-
-    DVGeo.setDesignVars(xDVs)
-    # just run the flow for one step
-    DASolver()
-    # write the deform FFDs, we have set writeDeformedFFDs=True in daOption
-    DASolver.writeDeformedFFDs()
 
 else:
     print("task arg not found!")
