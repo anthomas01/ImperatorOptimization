@@ -357,7 +357,7 @@ if args.task == "smt":
     ndoe = 50 #(at least number of design variables + 1)
 
     #number of iterations with EGO 
-    n_iter = 1
+    n_iter = 100
 
     #Build the initial DOE, add the random_state option to have the reproducibility of the LHS points
     sampling = LHS(xlimits=xlimits, random_state=1)
