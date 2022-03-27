@@ -349,7 +349,7 @@ if args.task == "opt":
 
 if args.task == "smt":
     #Limits for shape variables
-    xlimits=np.array([[-1.0,0.0] for i in range(2)])
+    xlimits=np.array([[-0.005,0.0] for i in range(2)])
     
     criterion='SBO' #'EI' or 'SBO' or 'LCB'
 
